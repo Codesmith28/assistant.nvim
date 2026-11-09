@@ -42,10 +42,15 @@ local function get_process(command, stdin, on_exit)
         }
 
         local co = coroutine.running()
+        local proc_cwd = (command and command.cwd) or require('assistant.core.fs').get_file_dir()
+        if not (proc_cwd and vim.fn.isdirectory(proc_cwd) == 1) then
+          proc_cwd = luv.cwd()
+        end
 
         ---@diagnostic disable-next-line: missing-fields
         process.handle, process.pid = luv.spawn(command.main, {
           args = command.args,
+          cwd = proc_cwd,
           stdio = stdio,
         }, function(code, signal)
           for _, pipe in ipairs(stdio) do

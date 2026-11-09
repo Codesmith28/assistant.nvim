@@ -30,7 +30,22 @@ end
 ---@param on_choice fun(item: T)
 function Picker:pick(items, options, on_choice)
   options = options or {}
-  if #items == 1 and (options.prompt == 'source' or options.auto_select or (require('assistant.config').values.core and require('assistant.config').values.core.auto_select_single_source)) then
+  local core_cfg = (require('assistant.config').values and require('assistant.config').values.core) or {}
+
+  if options.prompt == 'source' then
+    if options.auto_select and options.default then
+      on_choice(options.default)
+      return
+    end
+    if core_cfg.default_source and vim.tbl_contains(items, core_cfg.default_source) then
+      on_choice(core_cfg.default_source)
+      return
+    end
+    if #items == 1 and core_cfg.auto_select_single_source ~= false then
+      on_choice(items[1])
+      return
+    end
+  elseif options.auto_select or (#items == 1 and core_cfg.auto_select_single_source) then
     on_choice(items[1])
     return
   end

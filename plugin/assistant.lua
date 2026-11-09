@@ -21,6 +21,12 @@ for k, v in pairs(highlights) do
   vim.api.nvim_set_hl(0, k, v)
 end
 
+vim.api.nvim_create_user_command('Assistant', function()
+  require('assistant.state').track_source()
+  require('assistant.utils').ensure_out_dir()
+  require('assistant.builtins.__wizard').standard:show()
+end, { nargs = 0, force = true })
+
 vim.api.nvim_create_autocmd('VimResized', {
   callback = function()
     for _, window in pairs {

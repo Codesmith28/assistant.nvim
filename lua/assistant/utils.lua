@@ -70,6 +70,7 @@ function utils.create_window(window)
   end
 
   window.bufnr = vim.api.nvim_create_buf(false, true)
+  vim.b[window.bufnr].autoformat = false
   window.winid = vim.api.nvim_open_win(window.bufnr, window.enter, utils.get_win_config(window))
 end
 
@@ -271,32 +272,7 @@ function utils.get_source_config()
     end
   end
 
-  -- If file is in a subdirectory relative to cwd, adjust relative paths
-  if filedir and filedir ~= cwd and command then
-    local rel_dir = vim.fn.fnamemodify(filedir, ':.')
-    if rel_dir and rel_dir ~= '' and rel_dir ~= '.' then
-      local target_file = string.format('%s.%s', filename, extension)
-
-      if command.compile and command.compile.args then
-        for i, arg in ipairs(command.compile.args) do
-          if string.match(arg, '^%./' .. vim.pesc(out_dir) .. '/') then
-            command.compile.args[i] = './' .. rel_dir .. '/' .. out_dir .. '/' .. filename
-          elseif string.match(arg, '^' .. vim.pesc(out_dir) .. '/') then
-            command.compile.args[i] = rel_dir .. '/' .. arg
-          elseif arg == target_file or string.match(arg, target_file .. '$') then
-            command.compile.args[i] = rel_dir .. '/' .. target_file
-          end
-        end
-      end
-
-      if command.execute and command.execute.main then
-        if string.match(command.execute.main, '^%./' .. vim.pesc(out_dir) .. '/') then
-          command.execute.main = './' .. rel_dir .. '/' .. out_dir .. '/' .. filename
-        end
-      end
-    end
-  end
-
+  command.cwd = filedir
   return command
 end
 

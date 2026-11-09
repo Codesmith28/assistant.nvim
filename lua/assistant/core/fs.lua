@@ -28,30 +28,20 @@ end
 
 ---@return string|nil
 function fs.find_root()
-  local search_dirs = {}
   local filedir = fs.get_file_dir()
-  if filedir and filedir ~= '' and filedir ~= '/' and vim.fn.isdirectory(filedir) == 1 then
-    table.insert(search_dirs, filedir)
-  end
+  local start_dir = (filedir and filedir ~= '' and filedir ~= '/' and vim.fn.isdirectory(filedir) == 1) and filedir or luv.cwd()
 
-  local cwd = luv.cwd()
-  if cwd and cwd ~= '/' and not vim.tbl_contains(search_dirs, cwd) then
-    table.insert(search_dirs, cwd)
-  end
-
-  for _, start_dir in ipairs(search_dirs) do
-    local current_dir = start_dir
-    while current_dir and current_dir ~= '/' and current_dir ~= '.' do
-      local ast_dir = string.format('%s/%s', current_dir, '.ast')
-      if vim.fn.isdirectory(ast_dir) == 1 then
-        return current_dir
-      end
-      local parent = vim.fn.fnamemodify(current_dir, ':h')
-      if parent == current_dir or parent == '/' then
-        break
-      end
-      current_dir = parent
+  local current_dir = start_dir
+  while current_dir and current_dir ~= '/' and current_dir ~= '.' do
+    local ast_dir = string.format('%s/%s', current_dir, '.ast')
+    if vim.fn.isdirectory(ast_dir) == 1 then
+      return current_dir
     end
+    local parent = vim.fn.fnamemodify(current_dir, ':h')
+    if parent == current_dir or parent == '/' then
+      break
+    end
+    current_dir = parent
   end
 
   return nil

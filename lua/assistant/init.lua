@@ -1,12 +1,8 @@
 local state = require 'assistant.state'
 local M = {}
 
----@param opts? Assistant.Config
-function M.setup(opts)
-  require('assistant.config').overwrite(opts)
-  require('assistant.core.tcp').bind_server()
-
-  -- Prevent LSP and auto-formatters from hooking into assistant UI/patcher buffers
+-- Prevent LSP and auto-formatters from hooking into assistant UI/patcher buffers
+local function register_buffer_safety()
   local assistant_group = vim.api.nvim_create_augroup('assistant_buffers', { clear = true })
   vim.api.nvim_create_autocmd('BufWinEnter', {
     group = assistant_group,
@@ -24,6 +20,16 @@ function M.setup(opts)
       end
     end,
   })
+end
+
+-- Automatically protect assistant buffers on load
+register_buffer_safety()
+
+---@param opts? Assistant.Config
+function M.setup(opts)
+  require('assistant.config').overwrite(opts)
+  require('assistant.core.tcp').bind_server()
+  register_buffer_safety()
 
   -- Ensure state is saved and TCP cleanly terminates on exit
   vim.api.nvim_create_autocmd('VimLeavePre', {
