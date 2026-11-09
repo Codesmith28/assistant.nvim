@@ -1,129 +1,134 @@
-<p align="center">
-  <img width="128" height="128" alt='Assistant.nvim Logo' src="https://github.com/user-attachments/assets/720b55eb-9fa3-4eb7-9bc0-a439859d007f" />
-</p>
+# assistant.nvim
 
-<h1 align="center">Assistant.nvim</h1>
+A fast, lightweight Neovim testcase companion for competitive programming, forked and enhanced from [A7Lavinraj/assistant.nvim](https://github.com/A7Lavinraj/assistant.nvim). It integrates with [Competitive Companion](https://github.com/jmerle/competitive-companion) to parse test cases, run them asynchronously, and inspect outputs side-by-side with minimal friction.
 
-<p align="center">
-  <img alt="Latest release" src="https://img.shields.io/github/v/release/A7Lavinraj/assistant.nvim?style=for-the-badge&logo=starship&color=C9CBFF&logoColor=D9E0EE&labelColor=302D41&include_prerelease&sort=semver" />
-  <img alt="License" src="https://img.shields.io/github/license/A7Lavinraj/assistant.nvim?style=for-the-badge&logo=starship&color=ee999f&logoColor=D9E0EE&labelColor=302D41" />
-  <img alt="Stars" src="https://img.shields.io/github/stars/A7Lavinraj/assistant.nvim?style=for-the-badge&logo=starship&color=c69ff5&logoColor=D9E0EE&labelColor=302D41" />
-</p>
+---
 
-<p align="center">A powerful and efficient Neovim plugin designed for competitive programmers. It automates the testing workflow, making it faster and more convenient to run test cases directly inside Neovim</p>
+## ✨ Key Improvements in this Fork
 
-<br>
+- **Native Buffer Writing**: Full `:w`, `:wq`, and `<C-s>` support in the testcase patcher using `acwrite`, with real-time preview canvas updates.
+- **Seamless Testcase Creation**: Pressing `c` or `o` sequentially prompts for testcase input followed immediately by expected output.
+- **Smart Root Detection**: Automatically resolves `.ast/` testcase storage relative to either the source file's directory or the current working directory.
+- **Native Binary Output Support**: Built-in `.bin/` support with automated directory creation and path resolution for subdirectories (using `$OUT_DIR`).
+- **Competitive Companion Auto-Source**: Automatically chooses the language without prompting when `default_source` is configured or only a single command exists.
+- **Buffer Safety**: Automatically detaches active LSP clients and disables autoformatting (`b:autoformat = false`) on all assistant UI and patcher buffers.
+- **Immediate Disk Persistence**: Changes to testcases persist to disk immediately across creation, editing, deletion, and on exit.
+- **UI Polish**: Informative empty-state view and quick-reference keymap hints directly inside the panel footer.
 
-<div align="center">
+---
 
-  ![showcase](https://github.com/user-attachments/assets/3f4e910e-deea-4946-ad0d-7ab2541084f7)
+## 📦 Requirements
 
-</div>
+- Neovim `>= 0.9.5`
+- [Competitive Companion](https://github.com/jmerle/competitive-companion) browser extension (configured to port `10043`)
 
-<br>
+---
 
-> [!NOTE]
-> Speed is crucial in competitive programming. Ensure that using this plugin enhances your workflow rather than slowing you down.
+## 🚀 Installation
 
-<br>
-
-## Features
-
-- **Automated Test Case Management**: Easily fetch and organize test cases from online judges.
-- **Customizable Execution Commands**: Support for multiple programming languages with configurable commands.
-- **Interactive UI**: A user-friendly interface for managing test cases.
-- **Asynchronous Processing**: Ensures Neovim remains responsive during execution.
-
-<br>
-
-## Requirements
-
-- **Neovim** `>= 0.9.5`
-- [Competitive Companion Browser Extension](https://github.com/jmerle/competitive-companion)
-
-<br>
-
-## Installation Using [lazy.nvim](https://github.com/folke/lazy.nvim)
-
-### latest version
+Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
 {
-    'A7lavinraj/assistant.nvim',
-    lazy = false,
-    keys = {
-        { '<leader>a', '<cmd>Assistant<cr>', desc = 'Assistant.nvim' }
-    },
-    opts = {}
+  'Codesmith28/assistant.nvim',
+  keys = {
+    { '<leader>a', '<cmd>Assistant<cr>', desc = 'Assistant.nvim' },
+  },
+  opts = {
+    -- configuration goes here (see below)
+  },
 }
 ```
 
-### stable version
+---
+
+## ⚙️ Recommended Configuration
+
+Here is a clean C++ competitive programming configuration featuring `.bin/` binary output and compilation flags:
 
 ```lua
-{
-    'A7lavinraj/assistant.nvim',
-    branch = 'stable',
-    lazy = false,
-    keys = {
-        { '<leader>a', '<cmd>Assistant<cr>', desc = 'Assistant.nvim' }
-    },
-    opts = {}
-}
-```
-
-<br>
-
-## Default configuration
-
-```lua
-{
-    mappings = {},
-    commands = {
-        python = {
-            extension = 'py',
-            template = nil,
-            compile = nil,
-            execute = {
-                main = 'python3',
-                args = { '$FILENAME_WITH_EXTENSION' },
-            },
+require('assistant').setup({
+  commands = {
+    cpp = {
+      extension = 'cpp',
+      compile = {
+        main = 'g++',
+        args = {
+          '$FILENAME_WITH_EXTENSION',
+          '-std=c++20',
+          '-O2',
+          '-Wall',
+          '-Wextra',
+          '-o',
+          './$OUT_DIR/$FILENAME_WITHOUT_EXTENSION',
         },
-        cpp = {
-            extension = 'cpp',
-            template = nil,
-            compile = {
-                main = 'g++',
-                args = { '$FILENAME_WITH_EXTENSION', '-o', '$FILENAME_WITHOUT_EXTENSION' },
-            },
-            execute = {
-                main = './$FILENAME_WITHOUT_EXTENSION',
-                args = nil,
-            },
-        },
+      },
+      execute = {
+        main = './$OUT_DIR/$FILENAME_WITHOUT_EXTENSION',
+      },
     },
-    ui = {
-        border = 'single',
-        diff_mode = false,
-        title_components_separator = '',
+    python = {
+      extension = 'py',
+      execute = {
+        main = 'python3',
+        args = { '$FILENAME_WITH_EXTENSION' },
+      },
     },
-    core = {
-        process_budget = 5000,
-        port = 10043,
-        filename_generator = nil
-    },
-}
+  },
+  core = {
+    port = 10043,            -- Competitive Companion listener port
+    process_budget = 5000,   -- Execution timeout in milliseconds (TL)
+    default_source = 'cpp',  -- Auto-select without prompting
+    out_dir = '.bin',        -- Auto-created directory for compiled binaries
+  },
+  ui = {
+    border = 'rounded',
+    diff_mode = false,
+    title_components_separator = '',
+  },
+})
 ```
 
-<br>
+### Available Placeholders
 
-<h4 align="center">
-  <span>Explore more about assistant on</span>
-  <a href="https://github.com/A7Lavinraj/assistant.nvim/wiki">Wiki</a>
-</h4>
+- `$FILENAME_WITH_EXTENSION` – Full file name (e.g., `solution.cpp`)
+- `$FILENAME_WITHOUT_EXTENSION` – File name without extension (e.g., `solution`)
+- `$OUT_DIR` – Configured binary output directory (e.g., `.bin`)
+- `$FILEDIR` – Directory containing the active source file
 
-<div align="center">
-  <h2>Want to contribute?</h2>
+---
 
-  Please read [CONTRIBUTING.md](https://github.com/A7Lavinraj/assistant.nvim/blob/main/CONTRIBUTING.md) to get started
-</div>
+## ⌨️ Default Keybindings
+
+### Panel (`assistant-panel`)
+
+| Key | Action |
+| --- | --- |
+| `c`, `o` | Create new testcase (sequentially prompts for input then output) |
+| `<CR>`, `e` | Edit / patch selected testcase |
+| `r` | Run selected testcase(s) or current testcase |
+| `s` | Toggle selection for current testcase |
+| `a` | Toggle selection for all testcases |
+| `d` | Delete selected testcase(s) |
+| `i` | Open interactive terminal execution |
+| `<C-l>` | Focus previewer window |
+| `q`, `<C-c>`, `<Esc>` | Close Assistant |
+| `?` | Show Which-Key dialog with all mappings |
+
+### Previewer (`assistant-previewer`)
+
+| Key | Action |
+| --- | --- |
+| `<CR>`, `e` | Edit testcase currently in preview |
+| `<C-h>` | Focus back to panel window |
+| `q`, `<C-c>`, `<Esc>` | Close Assistant |
+| `?` | Show Which-Key dialog with all mappings |
+
+### Patcher (`assistant-patcher`)
+
+| Key | Action |
+| --- | --- |
+| `:w`, `<C-s>` | Save testcase buffer & refresh preview immediately |
+| `:wq`, `<CR>` | Save changes and close patcher buffer |
+| `:q`, `<C-c>` | Close patcher buffer without saving |
+| `<Esc>` | Disallowed to prevent accidental closure without saving |
