@@ -30,9 +30,12 @@ function Wizard:init(options)
 end
 
 function Wizard:show()
-  state.set_local_key('filename', vim.fn.expand '%:t:r')
-  state.set_local_key('filetype', vim.bo.filetype)
-  state.set_local_key('extension', vim.fn.expand '%:e')
+  state.track_source()
+  if not state.get_local_key 'filename' or state.get_local_key 'filename' == '' then
+    state.set_local_key('filename', vim.fn.expand '%:t:r')
+    state.set_local_key('filetype', vim.bo.filetype)
+    state.set_local_key('extension', vim.fn.expand '%:e')
+  end
   local filepath = fs.get_state_filepath()
 
   if filepath then
@@ -109,6 +112,8 @@ function Wizard:show()
         'AssistantParagraph',
       },
     },
+    footer = ' [c] new  [e/<CR>] edit  [a] all  [r] run  [d] delete  [q] close ',
+    footer_pos = 'center',
   })
   utils.set_win_config(self.previewer_window.winid, {
     title = {
@@ -194,7 +199,15 @@ function Wizard:show()
     end
   end
 
-  self.panel.canvas:set(self.panel_window.bufnr, state.get_global_key 'tests')
+  vim.b[self.panel_window.bufnr].autoformat = false
+  vim.b[self.previewer_window.bufnr].autoformat = false
+
+  local tests = state.get_global_key 'tests'
+  self.panel.canvas:set(self.panel_window.bufnr, tests)
+  if tests and #tests > 0 then
+    pcall(vim.api.nvim_win_set_cursor, self.panel_window.winid, { 1, 0 })
+    self.previewer.canvas:set(self.previewer_window.bufnr, tests[1])
+  end
 end
 
 function Wizard:hide()

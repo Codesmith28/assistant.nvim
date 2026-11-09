@@ -30,6 +30,11 @@ end
 ---@param on_choice fun(item: T)
 function Picker:pick(items, options, on_choice)
   options = options or {}
+  if #items == 1 and (options.prompt == 'source' or options.auto_select or (require('assistant.config').values.core and require('assistant.config').values.core.auto_select_single_source)) then
+    on_choice(items[1])
+    return
+  end
+
   local existing_picker_window = state.get_local_key 'assistant-picker-window'
 
   if existing_picker_window then
@@ -73,6 +78,7 @@ function Picker:pick(items, options, on_choice)
 
   utils.set_buf_option(picker_window, 'modifiable', false)
   utils.set_buf_option(picker_window, 'filetype', 'assistant-picker')
+  vim.b[picker_window.bufnr].autoformat = false
 
   utils.set_win_option(picker_window, 'cursorline', true)
   utils.set_win_option(

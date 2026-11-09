@@ -55,6 +55,10 @@ function Patcher:update(content, options, on_update)
     end,
   }
 
+  local prompt = options.prompt or options.self or 'field'
+  local tc_id = options.testcase_id or state.get_local_key 'assistant-cur-editing-id' or 1
+  local title_label = string.format(' Testcase #%d %s | :w / <CR> to save | :q to cancel ', tc_id, prompt:upper())
+
   utils.create_window(patcher_window)
 
   state.set_local_key('assistant-patcher-window', patcher_window)
@@ -67,11 +71,14 @@ function Patcher:update(content, options, on_update)
   })
 
   utils.set_win_config(patcher_window.winid, {
-    title = string.format(' %s ', options.self or 'Patcher'),
+    title = title_label,
     title_pos = 'center',
   })
 
   utils.set_buf_option(patcher_window, 'filetype', 'assistant-patcher')
+  vim.bo[patcher_window.bufnr].buftype = 'acwrite'
+  local dummy_name = string.format('assistant://patcher/%s_%d', prompt, patcher_window.bufnr)
+  pcall(vim.api.nvim_buf_set_name, patcher_window.bufnr, dummy_name)
 
   utils.set_win_option(
     patcher_window,
@@ -83,19 +90,53 @@ function Patcher:update(content, options, on_update)
     }, ',')
   )
 
+  local function save_content(close_window)
+    if not (patcher_window.bufnr and vim.api.nvim_buf_is_valid(patcher_window.bufnr)) then
+      return
+    end
+    local lines = vim.api.nvim_buf_get_lines(patcher_window.bufnr, 0, -1, false)
+    local full_text = table.concat(lines, '\n')
+    if close_window then
+      utils.remove_window(patcher_window)
+    else
+      vim.bo[patcher_window.bufnr].modified = false
+      utils.info('Saved ' .. prompt)
+    end
+    on_update(full_text)
+
+    -- Refresh previewer canvas immediately if visible
+    local pw = state.get_local_key 'assistant-previewer-window'
+    local pc = state.get_local_key 'assistant-previewer-canvas'
+    local tests = state.get_global_key 'tests'
+    if pw and pc and tests and tests[tc_id] and pw.bufnr and vim.api.nvim_buf_is_valid(pw.bufnr) then
+      pc:set(pw.bufnr, tests[tc_id])
+    end
+    state.persist()
+  end
+
+  vim.api.nvim_create_autocmd('BufWriteCmd', {
+    buffer = patcher_window.bufnr,
+    callback = function()
+      save_content(false)
+    end,
+  })
+
   utils.set_keymap {
     mode = 'n',
     lhs = '<cr>',
     rhs = function()
-      local lines = vim.api.nvim_buf_get_lines(patcher_window.bufnr, 0, -1, false)
-
-      utils.remove_window(patcher_window)
-      on_update(table.concat(lines, '\n'))
+      save_content(true)
     end,
     options = {
       buffer = patcher_window.bufnr,
     },
   }
+
+  vim.keymap.set({ 'n', 'i' }, '<C-s>', function()
+    save_content(false)
+  end, { buffer = patcher_window.bufnr, silent = true, desc = 'Save testcase' })
+
+  vim.keymap.set('n', '<Esc>', function() end, { buffer = patcher_window.bufnr, silent = true, desc = 'Prevent accidental discard' })
 
   for mode, mappings in pairs(require('assistant.mappings').default_mappings.patcher or {}) do
     for k, v in pairs(mappings) do

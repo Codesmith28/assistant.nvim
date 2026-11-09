@@ -12,6 +12,20 @@ wizard.standard = Wizard.new {
   panel = Panel.new {
     canvas = Canvas.new {
       fn = function(bufnr, testcases)
+        if not testcases or #testcases == 0 then
+          local text = Text.new {}
+          text:append('  No testcases found', 'AssistantWarning'):nl(2)
+          text:append('  Press ', 'AssistantParagraph')
+            :append('c', 'AssistantTitle')
+            :append(' to create a testcase', 'AssistantParagraph')
+            :nl()
+          text:append('  Press ', 'AssistantParagraph')
+            :append('?', 'AssistantTitle')
+            :append(' for keybindings', 'AssistantParagraph')
+          text:render(bufnr)
+          return
+        end
+
         local text = Text.new {}
         local gap = 5
         local get_group = setmetatable({ AC = 'AssistantSuccess', WA = 'AssistantFailure' }, {

@@ -42,7 +42,7 @@ local function wait_for_unbind(host, port, attempt, max_attempts, callback)
   end)
 end
 
-local function stop_server(callback)
+function tcp.stop_server(callback, silent)
   local utils = require 'assistant.utils'
   if client then
     client:close()
@@ -58,12 +58,18 @@ local function stop_server(callback)
       end
     end)
   else
-    utils.warn 'No running TCP server to stop'
+    if not silent then
+      -- Silently skip if no server is running
+    end
 
     if callback then
       callback()
     end
   end
+end
+
+local function stop_server(callback)
+  tcp.stop_server(callback)
 end
 
 local function start_server()
@@ -141,7 +147,7 @@ local function start_server()
 
           local generator = config.values.core.filename_generator or utils.to_snake_case
 
-          picker:pick(sources, { prompt = 'source' }, function(source)
+          local function on_source(source)
             local testcase_class_snake = generator(data.languages.java.taskClass)
             local filepath = string.format('%s/.ast/%s.json', fs.find_root() or fs.make_root(), testcase_class_snake)
             fs.write(filepath, chunk)
@@ -159,7 +165,15 @@ local function start_server()
 
             utils.info('populating with ' .. config.values.commands[source].template)
             vim.fn.execute(string.format('0read %s', config.values.commands[source].template))
-          end)
+          end
+
+          if config.values.core.default_source and config.values.commands[config.values.core.default_source] then
+            on_source(config.values.core.default_source)
+          elseif #sources == 1 then
+            on_source(sources[1])
+          else
+            picker:pick(sources, { prompt = 'source' }, on_source)
+          end
         end)
       end)
     end)

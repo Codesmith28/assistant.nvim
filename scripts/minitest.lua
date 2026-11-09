@@ -3,7 +3,7 @@ vim.env.LAZY_STDPATH = '.tests'
 load(vim.fn.system 'curl -s https://raw.githubusercontent.com/folke/lazy.nvim/main/bootstrap.lua')()
 
 local is_ci = not (vim.env.GITHUB_ACTIONS == nil)
-local assistant_spec = is_ci and { 'A7Lavinraj/assistant.nvim' } or { dir = '~/workspace/development/assistant.nvim' }
+local assistant_spec = { dir = vim.fn.getcwd() }
 
 require('lazy.minit').setup {
   spec = {

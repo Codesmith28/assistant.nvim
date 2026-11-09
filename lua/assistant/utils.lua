@@ -184,6 +184,26 @@ function utils.get_win_config(window)
   }
 end
 
+---Ensure output directory exists for binaries
+---@param dir? string
+function utils.ensure_out_dir(dir)
+  dir = dir or (config.values.core and config.values.core.out_dir) or '.bin'
+  local fs = require 'assistant.core.fs'
+  local filedir = fs.get_file_dir()
+  if filedir and filedir ~= '' and vim.fn.isdirectory(filedir) == 1 then
+    local target = filedir .. '/' .. dir
+    if vim.fn.isdirectory(target) == 0 then
+      vim.fn.mkdir(target, 'p')
+    end
+  end
+
+  local cwd = vim.fn.getcwd()
+  local cwd_target = cwd .. '/' .. dir
+  if vim.fn.isdirectory(cwd_target) == 0 then
+    vim.fn.mkdir(cwd_target, 'p')
+  end
+end
+
 ---@class Assistant.Processor.SourceConfig
 ---@field extension string
 ---@field compile? Assistant.Processor.Command
@@ -193,22 +213,52 @@ end
 ---@return Assistant.Processor.SourceConfig
 function utils.get_source_config()
   local state = require 'assistant.state'
+  local fs = require 'assistant.core.fs'
+  local out_dir = (config.values.core and config.values.core.out_dir) or '.bin'
+  utils.ensure_out_dir(out_dir)
+
+  local filename = state.get_local_key 'filename' or vim.fn.expand '%:t:r'
+  local extension = state.get_local_key 'extension' or vim.fn.expand '%:e'
+  local filedir = fs.get_file_dir()
+  local cwd = vim.fn.getcwd()
+
   ---@param str string
-  ---@return string, integer
+  ---@return string
   local function format(str)
-    local filename = state.get_local_key 'filename'
-    local extension = state.get_local_key 'extension'
+    if not str then
+      return ''
+    end
     return str
       :gsub('%$FILENAME_WITH_EXTENSION', string.format('%s.%s', filename, extension))
       :gsub('%$FILENAME_WITHOUT_EXTENSION', filename)
+      :gsub('%$OUT_DIR', out_dir)
+      :gsub('%$FILEDIR', filedir or '')
   end
 
-  local command = vim.deepcopy(config.values.commands[state.get_local_key 'filetype'])
+  local ft = state.get_local_key 'filetype'
+  if not (ft and config.values.commands[ft]) then
+    for k, cmd in pairs(config.values.commands or {}) do
+      if cmd.extension == extension then
+        ft = k
+        break
+      end
+    end
+  end
+  if not (ft and config.values.commands[ft]) then
+    ft = config.values.core.default_source or next(config.values.commands or {})
+  end
+
+  if not (ft and config.values.commands and config.values.commands[ft]) then
+    utils.error 'No configuration found for language/filetype'
+    return {}
+  end
+
+  local command = vim.deepcopy(config.values.commands[ft])
 
   if command.compile then
     command.compile.main = format(command.compile.main)
 
-    for i = 1, #command.compile.args do
+    for i = 1, #(command.compile.args or {}) do
       command.compile.args[i] = format(command.compile.args[i])
     end
   end
@@ -218,6 +268,32 @@ function utils.get_source_config()
 
     for i = 1, #(command.execute.args or {}) do
       command.execute.args[i] = format(command.execute.args[i])
+    end
+  end
+
+  -- If file is in a subdirectory relative to cwd, adjust relative paths
+  if filedir and filedir ~= cwd and command then
+    local rel_dir = vim.fn.fnamemodify(filedir, ':.')
+    if rel_dir and rel_dir ~= '' and rel_dir ~= '.' then
+      local target_file = string.format('%s.%s', filename, extension)
+
+      if command.compile and command.compile.args then
+        for i, arg in ipairs(command.compile.args) do
+          if string.match(arg, '^%./' .. vim.pesc(out_dir) .. '/') then
+            command.compile.args[i] = './' .. rel_dir .. '/' .. out_dir .. '/' .. filename
+          elseif string.match(arg, '^' .. vim.pesc(out_dir) .. '/') then
+            command.compile.args[i] = rel_dir .. '/' .. arg
+          elseif arg == target_file or string.match(arg, target_file .. '$') then
+            command.compile.args[i] = rel_dir .. '/' .. target_file
+          end
+        end
+      end
+
+      if command.execute and command.execute.main then
+        if string.match(command.execute.main, '^%./' .. vim.pesc(out_dir) .. '/') then
+          command.execute.main = './' .. rel_dir .. '/' .. out_dir .. '/' .. filename
+        end
+      end
     end
   end
 
