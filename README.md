@@ -6,6 +6,7 @@ A fast, lightweight Neovim testcase companion for competitive programming, forke
 
 ## ✨ Key Improvements in this Fork
 
+- **Smart Toolchain Auto-Discovery**: Automatically discovers modern compilers (versioned `g++-14..g++`, `clang++`, `python3`, `rustc`), detects the highest supported C++ standard (`-std=c++26` down to `c++17`), and sets optimal CP flags with zero boilerplate.
 - **Native Buffer Writing**: Full `:w`, `:wq`, and `<C-s>` support in the testcase patcher using `acwrite`, with real-time preview canvas updates.
 - **Seamless Testcase Creation**: Pressing `c` or `o` sequentially prompts for testcase input followed immediately by expected output.
 - **Smart Root Detection**: Automatically resolves `.ast/` testcase storage relative to either the source file's directory or the current working directory.
@@ -42,39 +43,14 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ---
 
-## ⚙️ Recommended Configuration
+## ⚙️ Configuration & Toolchain Discovery
 
-Here is a clean C++ competitive programming configuration featuring `.bin/` binary output and compilation flags:
+`assistant.nvim` automatically discovers the modern compilers on your system (`g++`, `clang++`, `python3`, `rustc`), detects the highest supported standard (e.g. `-std=c++26`), enables recommended CP debug flags (`-Wall -Wextra -D_GLIBCXX_DEBUG`), and isolates binaries in `.bin/`.
+
+**Zero configuration is required!** You can pass `{}` or customize options as desired:
 
 ```lua
 require('assistant').setup({
-  commands = {
-    cpp = {
-      extension = 'cpp',
-      compile = {
-        main = 'g++',
-        args = {
-          '$FILENAME_WITH_EXTENSION',
-          '-std=c++20',
-          '-O2',
-          '-Wall',
-          '-Wextra',
-          '-o',
-          './$OUT_DIR/$FILENAME_WITHOUT_EXTENSION',
-        },
-      },
-      execute = {
-        main = './$OUT_DIR/$FILENAME_WITHOUT_EXTENSION',
-      },
-    },
-    python = {
-      extension = 'py',
-      execute = {
-        main = 'python3',
-        args = { '$FILENAME_WITH_EXTENSION' },
-      },
-    },
-  },
   core = {
     port = 10043,            -- Competitive Companion listener port
     process_budget = 5000,   -- Execution timeout in milliseconds (TL)
@@ -85,6 +61,22 @@ require('assistant').setup({
     border = 'rounded',
     diff_mode = false,
     title_components_separator = '',
+  },
+  -- Optional: customize or override any language command
+  commands = {
+    cpp = {
+      compile = {
+        args = {
+          '$FILENAME_WITH_EXTENSION',
+          '-std=c++26',
+          '-O2',
+          '-Wall',
+          '-Wextra',
+          '-o',
+          './$OUT_DIR/$FILENAME_WITHOUT_EXTENSION',
+        },
+      },
+    },
   },
 })
 ```
