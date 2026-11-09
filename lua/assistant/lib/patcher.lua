@@ -64,12 +64,6 @@ function Patcher:update(content, options, on_update)
   state.set_local_key('assistant-patcher-window', patcher_window)
   state.set_local_key('assistant-patcher-canvas', self.canvas)
 
-  utils.create_autocmd('WinClosed', {
-    callback = function()
-      utils.remove_window(patcher_window)
-    end,
-  })
-
   utils.set_win_config(patcher_window.winid, {
     title = title_label,
     title_pos = 'center',
@@ -77,6 +71,7 @@ function Patcher:update(content, options, on_update)
 
   utils.set_buf_option(patcher_window, 'filetype', 'assistant-patcher')
   vim.bo[patcher_window.bufnr].buftype = 'acwrite'
+  vim.b[patcher_window.bufnr].autoformat = false
   local dummy_name = string.format('assistant://patcher/%s_%d', prompt, patcher_window.bufnr)
   pcall(vim.api.nvim_buf_set_name, patcher_window.bufnr, dummy_name)
 
@@ -90,19 +85,22 @@ function Patcher:update(content, options, on_update)
     }, ',')
   )
 
+  local closed = false
   local function save_content(close_window)
     if not (patcher_window.bufnr and vim.api.nvim_buf_is_valid(patcher_window.bufnr)) then
       return
     end
     local lines = vim.api.nvim_buf_get_lines(patcher_window.bufnr, 0, -1, false)
     local full_text = table.concat(lines, '\n')
+    vim.bo[patcher_window.bufnr].modified = false
+
     if close_window then
+      closed = true
       utils.remove_window(patcher_window)
     else
-      vim.bo[patcher_window.bufnr].modified = false
       utils.info('Saved ' .. prompt)
     end
-    on_update(full_text)
+    on_update(full_text, close_window)
 
     -- Refresh previewer canvas immediately if visible
     local pw = state.get_local_key 'assistant-previewer-window'
@@ -113,6 +111,21 @@ function Patcher:update(content, options, on_update)
     end
     state.persist()
   end
+
+  utils.create_autocmd('WinClosed', {
+    pattern = tostring(patcher_window.winid),
+    callback = function()
+      if not closed then
+        closed = true
+        if patcher_window.bufnr and vim.api.nvim_buf_is_valid(patcher_window.bufnr) and not vim.bo[patcher_window.bufnr].modified then
+          local lines = vim.api.nvim_buf_get_lines(patcher_window.bufnr, 0, -1, false)
+          local full_text = table.concat(lines, '\n')
+          on_update(full_text, true)
+        end
+        utils.remove_window(patcher_window)
+      end
+    end,
+  })
 
   vim.api.nvim_create_autocmd('BufWriteCmd', {
     buffer = patcher_window.bufnr,

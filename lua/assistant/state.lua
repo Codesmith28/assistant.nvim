@@ -61,7 +61,7 @@ end
 ---Immediately save tests to disk
 function state.persist()
   local tests = HashTable.global_data.tests
-  if not tests or vim.tbl_isempty(tests) then
+  if not tests then
     return
   end
 

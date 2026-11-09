@@ -13,17 +13,17 @@ T['config initialization and overwrite'] = function()
   config.overwrite {
     core = {
       default_source = 'cpp',
-      out_dir = '.bin',
+      out_dir = '.ast/bin',
     },
     commands = {
       cpp = {
         extension = 'cpp',
         compile = {
           main = 'g++',
-          args = { '$FILENAME_WITH_EXTENSION', '-o', '.bin/$FILENAME_WITHOUT_EXTENSION' },
+          args = { '$FILENAME_WITH_EXTENSION', '-o', '.ast/bin/$FILENAME_WITHOUT_EXTENSION' },
         },
         execute = {
-          main = './.bin/$FILENAME_WITHOUT_EXTENSION',
+          main = './.ast/bin/$FILENAME_WITHOUT_EXTENSION',
           args = {},
         },
       },
@@ -31,7 +31,7 @@ T['config initialization and overwrite'] = function()
   }
 
   test.expect.equality(config.values.core.default_source, 'cpp')
-  test.expect.equality(config.values.core.out_dir, '.bin')
+  test.expect.equality(config.values.core.out_dir, '.ast/bin')
   test.expect.equality(config.values.commands.python, nil)
   test.expect.equality(type(config.values.commands.cpp), 'table')
 end
@@ -57,6 +57,10 @@ T['fs get_state_filepath'] = function()
   local path = fs.get_state_filepath()
   test.expect.equality(type(path), 'string')
   test.expect.equality(string.match(path, 'problem_a%.json$') ~= nil, true)
+
+  local bin_dir = fs.get_bin_dir()
+  test.expect.equality(type(bin_dir), 'string')
+  test.expect.equality(string.match(bin_dir, '%.ast/bin$') ~= nil, true)
 end
 
 T['utils get_source_config formatting'] = function()

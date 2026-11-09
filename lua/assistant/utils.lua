@@ -188,7 +188,7 @@ end
 ---Ensure output directory exists for binaries
 ---@param dir? string
 function utils.ensure_out_dir(dir)
-  dir = dir or (config.values.core and config.values.core.out_dir) or '.bin'
+  dir = dir or (config.values.core and config.values.core.out_dir) or '.ast/bin'
   local fs = require 'assistant.core.fs'
   local filedir = fs.get_file_dir()
   if filedir and filedir ~= '' and vim.fn.isdirectory(filedir) == 1 then
@@ -215,7 +215,7 @@ end
 function utils.get_source_config()
   local state = require 'assistant.state'
   local fs = require 'assistant.core.fs'
-  local out_dir = (config.values.core and config.values.core.out_dir) or '.bin'
+  local out_dir = (config.values.core and config.values.core.out_dir) or '.ast/bin'
   utils.ensure_out_dir(out_dir)
 
   local filename = state.get_local_key 'filename' or vim.fn.expand '%:t:r'

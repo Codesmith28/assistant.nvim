@@ -24,7 +24,7 @@ local config = {}
 ---@param out_dir? string
 ---@return table
 function config.get_defaults(out_dir)
-  out_dir = out_dir or '.bin'
+  out_dir = out_dir or '.ast/bin'
   return {
     commands = toolchain.get_default_commands(out_dir),
     ui = {
@@ -42,7 +42,7 @@ function config.get_defaults(out_dir)
   }
 end
 
-local defaults = config.get_defaults('.bin')
+local defaults = config.get_defaults('.ast/bin')
 
 -- Initialize with defaults so requiring dependent modules (e.g. mappings) before overwrite() won't fail
 config.values = vim.deepcopy(defaults)

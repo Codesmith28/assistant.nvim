@@ -59,7 +59,22 @@ function fs.make_root()
     vim.fn.mkdir(ast_path, 'p')
   end
 
+  local bin_path = string.format('%s/.ast/bin', target_dir)
+  if vim.fn.isdirectory(bin_path) == 0 then
+    vim.fn.mkdir(bin_path, 'p')
+  end
+
   return target_dir
+end
+
+---@return string
+function fs.get_bin_dir()
+  local root_dir = fs.find_root() or fs.make_root()
+  local bin_path = string.format('%s/.ast/bin', root_dir)
+  if vim.fn.isdirectory(bin_path) == 0 then
+    vim.fn.mkdir(bin_path, 'p')
+  end
+  return bin_path
 end
 
 ---@return string|nil

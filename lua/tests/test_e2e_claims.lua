@@ -146,6 +146,10 @@ T['Claim 4: Smart Root Detection'] = function()
   local resolved_dir = fs.make_root()
   test.expect.equality(resolved_dir, nested_dir)
   test.expect.equality(vim.fn.isdirectory(nested_dir .. '/.ast'), 1)
+  test.expect.equality(vim.fn.isdirectory(nested_dir .. '/.ast/bin'), 1)
+
+  local bin_path = fs.get_bin_dir()
+  test.expect.equality(bin_path, nested_dir .. '/.ast/bin')
 
   local state_path = fs.get_state_filepath()
   test.expect.equality(state_path, nested_dir .. '/.ast/problemA.json')
@@ -158,6 +162,10 @@ T['Claim 4: Smart Root Detection'] = function()
   state.set_local_key('filedir', nested_dir)
   local found_root = fs.find_root()
   test.expect.equality(found_root, ancestor_dir)
+
+  local ancestor_bin_path = fs.get_bin_dir()
+  test.expect.equality(ancestor_bin_path, ancestor_dir .. '/.ast/bin')
+  test.expect.equality(vim.fn.isdirectory(ancestor_dir .. '/.ast/bin'), 1)
 
   local ancestor_state_path = fs.get_state_filepath()
   test.expect.equality(ancestor_state_path, ancestor_dir .. '/.ast/problemA.json')
@@ -189,12 +197,12 @@ T['Claim 5: Native Binary Output Support'] = function()
   state.set_local_key('extension', 'cpp')
   state.set_local_key('filetype', 'cpp')
 
-  config.overwrite({ core = { out_dir = '.bin' } })
+  config.overwrite({ core = { out_dir = '.ast/bin' } })
 
-  -- 1. Verify ensure_out_dir creates .bin in both sub_dir and cwd
-  utils.ensure_out_dir('.bin')
-  test.expect.equality(vim.fn.isdirectory(sub_dir .. '/.bin'), 1)
-  test.expect.equality(vim.fn.isdirectory(test_root .. '/.bin'), 1)
+  -- 1. Verify ensure_out_dir creates .ast/bin in both sub_dir and cwd
+  utils.ensure_out_dir('.ast/bin')
+  test.expect.equality(vim.fn.isdirectory(sub_dir .. '/.ast/bin'), 1)
+  test.expect.equality(vim.fn.isdirectory(test_root .. '/.ast/bin'), 1)
 
   -- 2. Verify get_source_config adjusts relative paths
   local cmd = utils.get_source_config()
@@ -205,8 +213,8 @@ T['Claim 5: Native Binary Output Support'] = function()
   local compile_res = vim.fn.system(compile_cmd)
   test.expect.equality(vim.v.shell_error, 0)
 
-  -- 3. Verify binary exists in sub_dir/.bin/solver
-  test.expect.equality(vim.fn.filereadable(sub_dir .. '/.bin/solver'), 1)
+  -- 3. Verify binary exists in sub_dir/.ast/bin/solver
+  test.expect.equality(vim.fn.filereadable(sub_dir .. '/.ast/bin/solver'), 1)
 
   -- 4. Execute binary within cmd.cwd and verify output
   local exec_cmd = string.format('cd %s && %s', vim.fn.shellescape(cmd.cwd), cmd.execute.main)

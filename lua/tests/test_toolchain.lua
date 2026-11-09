@@ -17,7 +17,7 @@ T['toolchain standard detection'] = function()
 end
 
 T['toolchain default commands'] = function()
-  local commands = toolchain.get_default_commands('.bin')
+  local commands = toolchain.get_default_commands('.ast/bin')
   test.expect.equality(type(commands.cpp), 'table')
   test.expect.equality(type(commands.cpp.compile), 'table')
   test.expect.equality(type(commands.cpp.compile.main), 'string')
@@ -29,7 +29,7 @@ end
 T['config auto defaults with toolchain'] = function()
   config.overwrite()
   test.expect.equality(config.values.core.default_source, 'cpp')
-  test.expect.equality(config.values.core.out_dir, '.bin')
+  test.expect.equality(config.values.core.out_dir, '.ast/bin')
   test.expect.equality(type(config.values.commands.cpp), 'table')
   test.expect.equality(type(config.values.commands.cpp.compile.args), 'table')
 end

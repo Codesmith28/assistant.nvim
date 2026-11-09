@@ -9,8 +9,8 @@ A fast, lightweight Neovim testcase companion for competitive programming, forke
 - **Smart Toolchain Auto-Discovery**: Automatically discovers modern compilers (versioned `g++-14..g++`, `clang++`, `python3`, `rustc`), detects the highest supported C++ standard (`-std=c++26` down to `c++17`), and sets optimal CP flags with zero boilerplate.
 - **Native Buffer Writing**: Full `:w`, `:wq`, and `<C-s>` support in the testcase patcher using `acwrite`, with real-time preview canvas updates.
 - **Seamless Testcase Creation**: Pressing `c` or `o` sequentially prompts for testcase input followed immediately by expected output.
-- **Smart Root Detection**: Automatically resolves `.ast/` testcase storage relative to either the source file's directory or the current working directory.
-- **Native Binary Output Support**: Built-in `.bin/` support with automated directory creation and path resolution for subdirectories (using `$OUT_DIR`).
+- **Smart Root Detection**: Automatically resolves `.ast/` testcase storage and `.ast/bin/` binary output relative to either the source file's directory or the current working directory.
+- **Native Binary Output Support**: Built-in `.ast/bin/` support with automated directory creation and path resolution for subdirectories (using `$OUT_DIR`), cleanly isolating compiled binaries inside `.ast/` with no separate `.bin/` directory cluttering your repo.
 - **Competitive Companion Auto-Source**: Automatically chooses the language without prompting when `default_source` is configured or only a single command exists.
 - **Buffer Safety**: Automatically detaches active LSP clients and disables autoformatting (`b:autoformat = false`) on all assistant UI and patcher buffers.
 - **Immediate Disk Persistence**: Changes to testcases persist to disk immediately across creation, editing, deletion, and on exit.
@@ -45,7 +45,7 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ## ⚙️ Configuration & Toolchain Discovery
 
-`assistant.nvim` automatically discovers the modern compilers on your system (`g++`, `clang++`, `python3`, `rustc`), detects the highest supported standard (e.g. `-std=c++26`), enables recommended CP debug flags (`-Wall -Wextra -D_GLIBCXX_DEBUG`), and isolates binaries in `.bin/`.
+`assistant.nvim` automatically discovers the modern compilers on your system (`g++`, `clang++`, `python3`, `rustc`), detects the highest supported standard (e.g. `-std=c++26`), enables recommended CP debug flags (`-Wall -Wextra -D_GLIBCXX_DEBUG`), and cleanly isolates binaries inside `.ast/bin/` without cluttering the repository.
 
 **Zero configuration is required!** You can pass `{}` or customize options as desired:
 
@@ -55,7 +55,7 @@ require('assistant').setup({
     port = 10043,            -- Competitive Companion listener port
     process_budget = 5000,   -- Execution timeout in milliseconds (TL)
     default_source = 'cpp',  -- Auto-select without prompting
-    out_dir = '.bin',        -- Auto-created directory for compiled binaries
+    out_dir = '.ast/bin',    -- Auto-created directory for compiled binaries
   },
   ui = {
     border = 'rounded',
@@ -85,7 +85,7 @@ require('assistant').setup({
 
 - `$FILENAME_WITH_EXTENSION` – Full file name (e.g., `solution.cpp`)
 - `$FILENAME_WITHOUT_EXTENSION` – File name without extension (e.g., `solution`)
-- `$OUT_DIR` – Configured binary output directory (e.g., `.bin`)
+- `$OUT_DIR` – Configured binary output directory (default: `.ast/bin`)
 - `$FILEDIR` – Directory containing the active source file
 
 ---

@@ -169,7 +169,7 @@ end
 ---@param out_dir? string
 ---@return table<string, Assistant.Processor.SourceConfig>
 function toolchain.get_default_commands(out_dir)
-  out_dir = out_dir or '.bin'
+  out_dir = out_dir or '.ast/bin'
   local cpp_compiler = toolchain.find_cpp_compiler()
   local cpp_std = toolchain.detect_cpp_standard(cpp_compiler)
   local c_compiler = toolchain.find_c_compiler()

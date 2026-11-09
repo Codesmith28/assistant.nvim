@@ -150,7 +150,7 @@ local function patch_field(testcase_ID, field, on_done)
   require('assistant.builtins.__patcher').standard:update(
     testcases[testcase_ID][field] or '',
     { prompt = field, testcase_id = testcase_ID },
-    function(content)
+    function(content, is_done)
       testcases[testcase_ID][field] = content
       local pw = state.get_local_key 'assistant-previewer-window'
       local pc = state.get_local_key 'assistant-previewer-canvas'
@@ -158,7 +158,7 @@ local function patch_field(testcase_ID, field, on_done)
         pc:set(pw.bufnr, testcases[testcase_ID])
       end
       state.persist()
-      if on_done then
+      if is_done ~= false and on_done then
         on_done()
       end
     end
