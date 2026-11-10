@@ -110,6 +110,7 @@ local function start_server()
     end
 
     server:accept(client)
+    local req_buffer = ''
     client:read_start(function(c_err, chunk)
       if c_err then
         utils.err('Client read error: ' .. c_err)
@@ -126,19 +127,40 @@ local function start_server()
         return
       end
 
-      vim.schedule(function()
-        chunk = string.match(chunk, '^.+\r\n(.+)$') ---@type string
-        local data = vim.json.decode(chunk)
+      req_buffer = req_buffer .. chunk
 
-        if not data.languages.java.taskClass then
+      -- Send HTTP 200 OK response and close client connection cleanly
+      pcall(function()
+        client:write('HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n', function()
+          if client and not luv.is_closing(client) then
+            client:close()
+          end
+        end)
+      end)
+
+      vim.schedule(function()
+        local body = req_buffer
+        local body_start = string.find(body, '\r\n\r\n', 1, true)
+        if body_start then
+          body = string.sub(body, body_start + 4)
+        else
+          body_start = string.find(body, '\n\n', 1, true)
+          if body_start then
+            body = string.sub(body, body_start + 2)
+          end
+        end
+
+        local ok_dec, data = pcall(vim.json.decode, body)
+        if not ok_dec or not data then
+          return
+        end
+
+        local task_class = (data.languages and data.languages.java and data.languages.java.taskClass) or data.name
+        if not task_class or task_class == '' then
           return
         end
 
         vim.schedule(function()
-          if not data then
-            return
-          end
-
           local sources = {}
 
           for key, _ in pairs(config.values.commands) do
@@ -148,9 +170,9 @@ local function start_server()
           local generator = config.values.core.filename_generator or utils.to_snake_case
 
           local function on_source(source)
-            local testcase_class_snake = generator(data.languages.java.taskClass)
+            local testcase_class_snake = generator(task_class)
             local filepath = string.format('%s/.ast/%s.json', fs.find_root() or fs.make_root(), testcase_class_snake)
-            fs.write(filepath, chunk)
+            fs.write(filepath, body)
 
             if not source then
               return
