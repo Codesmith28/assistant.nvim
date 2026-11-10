@@ -291,20 +291,26 @@ function actions.which_key()
 
     for mode, keys in pairs(mapping) do
       for k, v in pairs(keys) do
+        local action_name = (type(v) == 'table' and type(v.get_name) == 'function' and v:get_name())
+          or (type(v) == 'function' and '(custom)')
+          or tostring(v)
         text
           :append('  ', 'AssistantBorder')
           :append(mode_map[mode] .. string.rep(' ', gap), 'AssistantBorder')
           :append('   ', 'AssistantHeading')
           :append(k .. string.rep(' ', 2 * gap - #k), 'AssistantHeading')
           :append(' 󱐌 ', 'String')
-          :append(v:get_name(), 'String')
+          :append(action_name, 'String')
           :nl()
       end
     end
     text:nl(2)
   end
 
-  state.get_local_key('status').dialog = 'Which Key'
+  local cur_status = state.get_local_key 'status'
+  if cur_status then
+    cur_status.dialog = 'Which Key'
+  end
 
   require('assistant.builtins.__dialog').standard:display(text, { prompt = 'Which Key ?' })
 end

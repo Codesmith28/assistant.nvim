@@ -26,4 +26,14 @@ T['to_snake_case'] = function()
   end
 end
 
+T['which_key with functions and actions'] = function()
+  local actions = require 'assistant.actions'
+  local mappings = require 'assistant.mappings'
+  mappings.default_mappings.panel.n['<F1>'] = function() end
+  local ok, err = pcall(function()
+    actions.which_key()
+  end)
+  test.expect.equality(ok, true)
+end
+
 return T

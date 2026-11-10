@@ -188,6 +188,10 @@ function Processor.run_testcases(testcase_IDS)
   local panel_canvas = state.get_local_key 'assistant-panel-canvas'
   local command = utils.get_source_config()
   local status = state.get_local_key 'status'
+  if not status then
+    status = {}
+    state.set_local_key('status', status)
+  end
 
   scheduler:schedule(get_process(command.compile, nil, function(build_code, build_signal, build_logs)
     vim.schedule(function()

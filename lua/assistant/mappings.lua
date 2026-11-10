@@ -1,5 +1,6 @@
 local actions = require 'assistant.actions'
 local config = require 'assistant.config'
+local Action = require 'assistant.lib.action'
 local mappings = {}
 
 mappings.default_mappings = {
@@ -54,8 +55,8 @@ mappings.default_mappings = {
     n = {
       ['?'] = actions.which_key,
       ['q'] = actions.close_current,
-      ['<ESC>'] = function() end,
-      ['<esc>'] = function() end,
+      ['<ESC>'] = Action.new('ignore', function() end),
+      ['<esc>'] = Action.new('ignore', function() end),
       ['<C-c>'] = actions.close_current,
     },
   },
