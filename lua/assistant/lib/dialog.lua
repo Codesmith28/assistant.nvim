@@ -61,9 +61,12 @@ function Dialog:display(content, options)
   state.set_local_key('assistant-dialog-canvas', self.canvas)
 
   utils.create_autocmd('WinClosed', {
-    buffer = dialog_window.bufnr,
+    pattern = tostring(dialog_window.winid),
     callback = function()
       utils.remove_window(dialog_window)
+      state.set_local_key('assistant-dialog-window', nil)
+      state.set_local_key('assistant-dialog-canvas', nil)
+      utils.focus_panel()
     end,
   })
 

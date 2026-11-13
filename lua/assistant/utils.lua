@@ -89,6 +89,36 @@ function utils.remove_window(window)
   end
 end
 
+---Focus the testcases panel window if valid
+function utils.focus_panel()
+  local state = require 'assistant.state'
+  local panel_window = state.get_local_key 'assistant-panel-window'
+  if panel_window and panel_window.winid and vim.api.nvim_win_is_valid(panel_window.winid) then
+    pcall(vim.api.nvim_set_current_win, panel_window.winid)
+    vim.schedule(function()
+      local cur_patcher = state.get_local_key 'assistant-patcher-window'
+      if cur_patcher and cur_patcher.winid and vim.api.nvim_win_is_valid(cur_patcher.winid) then
+        local cur_win = vim.api.nvim_get_current_win()
+        if cur_win == cur_patcher.winid then
+          return
+        end
+      end
+      local cur_picker = state.get_local_key 'assistant-picker-window'
+      if cur_picker and cur_picker.winid and vim.api.nvim_win_is_valid(cur_picker.winid) then
+        local cur_win = vim.api.nvim_get_current_win()
+        if cur_win == cur_picker.winid then
+          return
+        end
+      end
+
+      local pw = state.get_local_key 'assistant-panel-window'
+      if pw and pw.winid and vim.api.nvim_win_is_valid(pw.winid) then
+        pcall(vim.api.nvim_set_current_win, pw.winid)
+      end
+    end)
+  end
+end
+
 ---@param events string|string[]
 ---@param options vim.api.keyset.create_autocmd
 function utils.create_autocmd(events, options)

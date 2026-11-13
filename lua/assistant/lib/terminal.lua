@@ -50,9 +50,11 @@ function Terminal:spawn()
   state.set_local_key('assistant-terminal-window', terminal_window)
 
   utils.create_autocmd('WinClosed', {
-    buffer = terminal_window.bufnr,
+    pattern = tostring(terminal_window.winid),
     callback = function()
       utils.remove_window(terminal_window)
+      state.set_local_key('assistant-terminal-window', nil)
+      utils.focus_panel()
     end,
   })
 

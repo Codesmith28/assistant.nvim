@@ -97,6 +97,9 @@ function Patcher:update(content, options, on_update)
     if close_window then
       closed = true
       utils.remove_window(patcher_window)
+      state.set_local_key('assistant-patcher-window', nil)
+      state.set_local_key('assistant-patcher-canvas', nil)
+      utils.focus_panel()
     else
       utils.info('Saved ' .. prompt)
     end
@@ -123,6 +126,9 @@ function Patcher:update(content, options, on_update)
           on_update(full_text, true)
         end
         utils.remove_window(patcher_window)
+        state.set_local_key('assistant-patcher-window', nil)
+        state.set_local_key('assistant-patcher-canvas', nil)
+        utils.focus_panel()
       end
     end,
   })

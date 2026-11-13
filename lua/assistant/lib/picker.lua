@@ -81,8 +81,12 @@ function Picker:pick(items, options, on_choice)
   state.set_local_key('assistant-picker-canvas', self.canvas)
 
   utils.create_autocmd('WinClosed', {
+    pattern = tostring(picker_window.winid),
     callback = function()
       utils.remove_window(picker_window)
+      state.set_local_key('assistant-picker-window', nil)
+      state.set_local_key('assistant-picker-canvas', nil)
+      utils.focus_panel()
     end,
   })
 
@@ -112,6 +116,9 @@ function Picker:pick(items, options, on_choice)
     rhs = function()
       local current_line = vim.api.nvim_get_current_line()
       utils.remove_window(picker_window)
+      state.set_local_key('assistant-picker-window', nil)
+      state.set_local_key('assistant-picker-canvas', nil)
+      utils.focus_panel()
       on_choice(current_line)
     end,
     options = {

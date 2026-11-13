@@ -13,9 +13,9 @@ local Canvas = require 'assistant.lib.canvas'
 local T = test.new_set()
 
 -- =========================================================================
--- Claim 1: Smart Toolchain Auto-Discovery
+-- Smart Toolchain Auto-Discovery
 -- =========================================================================
-T['Claim 1: Smart Toolchain Auto-Discovery'] = function()
+T['smart toolchain auto-discovery'] = function()
   -- Reset config to auto-discovered defaults
   config.overwrite({})
 
@@ -51,9 +51,9 @@ T['Claim 1: Smart Toolchain Auto-Discovery'] = function()
 end
 
 -- =========================================================================
--- Claim 2: Native Buffer Writing
+-- Native Buffer Writing
 -- =========================================================================
-T['Claim 2: Native Buffer Writing'] = function()
+T['native buffer writing'] = function()
   local dummy_canvas = Canvas.new {
     fn = function(bufnr, content)
       if type(content) == 'string' then
@@ -94,9 +94,9 @@ T['Claim 2: Native Buffer Writing'] = function()
 end
 
 -- =========================================================================
--- Claim 3: Seamless Testcase Creation
+-- Seamless Testcase Creation
 -- =========================================================================
-T['Claim 3: Seamless Testcase Creation'] = function()
+T['seamless testcase creation'] = function()
   state.set_global_key('tests', {})
   test.expect.equality(#state.get_global_key('tests'), 0)
 
@@ -132,9 +132,9 @@ T['Claim 3: Seamless Testcase Creation'] = function()
 end
 
 -- =========================================================================
--- Claim 4: Smart Root Detection
+-- Smart Root Detection
 -- =========================================================================
-T['Claim 4: Smart Root Detection'] = function()
+T['smart root detection'] = function()
   local test_base = '/tmp/e2e_root_test_' .. tostring(os.time())
   local nested_dir = test_base .. '/contest/div2'
   vim.fn.mkdir(nested_dir, 'p')
@@ -175,9 +175,9 @@ T['Claim 4: Smart Root Detection'] = function()
 end
 
 -- =========================================================================
--- Claim 5: Native Binary Output Support
+-- Native Binary Output Support
 -- =========================================================================
-T['Claim 5: Native Binary Output Support'] = function()
+T['native binary output support'] = function()
   local test_root = '/tmp/e2e_bin_test_' .. tostring(os.time())
   local sub_dir = test_root .. '/src'
   vim.fn.mkdir(sub_dir, 'p')
@@ -228,9 +228,9 @@ T['Claim 5: Native Binary Output Support'] = function()
 end
 
 -- =========================================================================
--- Claim 6: Competitive Companion Auto-Source
+-- Competitive Companion Auto-Source
 -- =========================================================================
-T['Claim 6: Competitive Companion Auto-Source'] = function()
+T['competitive companion auto-source'] = function()
   config.overwrite({ core = { default_source = 'cpp' } })
 
   -- Verify picker:pick auto-selects if options.prompt == 'source' and default_source is set
@@ -251,9 +251,9 @@ T['Claim 6: Competitive Companion Auto-Source'] = function()
 end
 
 -- =========================================================================
--- Claim 7: Buffer Safety
+-- Buffer Safety
 -- =========================================================================
-T['Claim 7: Buffer Safety'] = function()
+T['buffer safety'] = function()
   local buf = vim.api.nvim_create_buf(false, false)
   vim.api.nvim_buf_set_name(buf, 'assistant://panel/test')
   vim.bo[buf].filetype = 'assistant-panel'
@@ -270,9 +270,9 @@ T['Claim 7: Buffer Safety'] = function()
 end
 
 -- =========================================================================
--- Claim 8: Immediate Disk Persistence
+-- Immediate Disk Persistence
 -- =========================================================================
-T['Claim 8: Immediate Disk Persistence'] = function()
+T['immediate disk persistence'] = function()
   local tmp_dir = '/tmp/e2e_persist_test_' .. tostring(os.time())
   vim.fn.mkdir(tmp_dir, 'p')
 
@@ -304,9 +304,9 @@ T['Claim 8: Immediate Disk Persistence'] = function()
 end
 
 -- =========================================================================
--- Claim 9: UI Polish (Empty State & Footer)
+-- UI Polish (Empty State & Footer)
 -- =========================================================================
-T['Claim 9: UI Polish'] = function()
+T['ui polish'] = function()
   -- Show wizard with empty tests
   state.set_global_key('tests', {})
   state.set_local_key('filename', 'ui_test')
@@ -335,6 +335,56 @@ T['Claim 9: UI Polish'] = function()
   test.expect.equality(string.match(full_panel, 'No testcases found') ~= nil, true)
   test.expect.equality(string.match(full_panel, 'Press c to create a testcase') ~= nil, true)
   test.expect.equality(string.match(full_panel, 'Press %? for keybindings') ~= nil, true)
+
+  wizard_mod.standard:hide()
+end
+
+-- =========================================================================
+-- Testcase Pane Focus Retention (Edit / Write Testcases)
+-- =========================================================================
+T['testcase pane focus retention'] = function()
+  state.set_global_key('tests', {})
+  state.set_local_key('filename', 'focus_test')
+
+  wizard_mod.standard:show()
+
+  local panel_w = state.get_local_key 'assistant-panel-window'
+  test.expect.equality(panel_w ~= nil, true)
+  test.expect.equality(vim.api.nvim_win_is_valid(panel_w.winid), true)
+
+  -- Mock patcher standard update to simulate user saving input then output
+  local patcher_mod = require 'assistant.builtins.__patcher'
+  local original_update = patcher_mod.standard.update
+
+  patcher_mod.standard.update = function(self, content, opts, on_update)
+    if opts.prompt == 'input' then
+      on_update('10\n', true)
+    elseif opts.prompt == 'output' then
+      on_update('20\n', true)
+    end
+  end
+
+  -- 1. Verify create_new_testcase restores focus to panel
+  actions.create_new_testcase()
+
+  vim.wait(300, function()
+    local tests = state.get_global_key 'tests'
+    return tests and tests[1] and tests[1].input == '10\n' and tests[1].output == '20\n'
+  end)
+
+  test.expect.equality(vim.api.nvim_get_current_win(), panel_w.winid)
+
+  -- 2. Verify patch_testcase restores focus to panel
+  actions.patch_testcase()
+  local picker_w = state.get_local_key 'assistant-picker-window'
+  test.expect.equality(picker_w ~= nil, true)
+
+  -- Select 'both' in picker (triggers mock patcher for input then output)
+  actions.close_current()
+  test.expect.equality(vim.api.nvim_get_current_win(), panel_w.winid)
+
+  -- Restore original patcher update
+  patcher_mod.standard.update = original_update
 
   wizard_mod.standard:hide()
 end

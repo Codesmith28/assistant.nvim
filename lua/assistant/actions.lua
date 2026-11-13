@@ -28,23 +28,22 @@ function actions.close_current()
       end
     else
       utils.remove_window(state.get_local_key(string.format('assistant-%s-window', match)))
+      state.set_local_key(string.format('assistant-%s-window', match), nil)
+      state.set_local_key(string.format('assistant-%s-canvas', match), nil)
+      utils.focus_panel()
     end
   end
 end
 
 function actions.focus_panel()
-  local panel_window = state.get_local_key 'assistant-panel-window'
-
-  if panel_window and panel_window.winid and vim.api.nvim_win_is_valid(panel_window.winid) then
-    vim.fn.win_gotoid(panel_window.winid)
-  end
+  utils.focus_panel()
 end
 
 function actions.focus_previewer()
   local previewer_window = state.get_local_key 'assistant-previewer-window'
 
   if previewer_window and previewer_window.winid and vim.api.nvim_win_is_valid(previewer_window.winid) then
-    vim.fn.win_gotoid(previewer_window.winid)
+    pcall(vim.api.nvim_set_current_win, previewer_window.winid)
   end
 end
 
@@ -158,8 +157,11 @@ local function patch_field(testcase_ID, field, on_done)
         pc:set(pw.bufnr, testcases[testcase_ID])
       end
       state.persist()
-      if is_done ~= false and on_done then
-        on_done()
+      if is_done ~= false then
+        utils.focus_panel()
+        if on_done then
+          on_done()
+        end
       end
     end
   )
@@ -198,6 +200,7 @@ function actions.create_new_testcase()
       vim.schedule(function()
         patch_field(new_id, 'output', function()
           utils.info(string.format('Testcase #%d saved!', new_id))
+          utils.focus_panel()
         end)
       end)
     end)
@@ -269,8 +272,22 @@ function actions.patch_testcase()
     cur_status.picker = 'Picking(field)'
   end
 
-  require('assistant.builtins.__picker').standard:pick({ 'input', 'output' }, { prompt = 'field' }, function(choice)
-    patch_field(testcase_ID, choice)
+  require('assistant.builtins.__picker').standard:pick({ 'both', 'input', 'output' }, { prompt = 'field' }, function(choice)
+    if choice == 'both' then
+      patch_field(testcase_ID, 'input', function()
+        vim.schedule(function()
+          patch_field(testcase_ID, 'output', function()
+            utils.info(string.format('Testcase #%d saved!', testcase_ID))
+            utils.focus_panel()
+          end)
+        end)
+      end)
+    else
+      patch_field(testcase_ID, choice, function()
+        utils.info(string.format('Testcase #%d %s saved!', testcase_ID, choice))
+        utils.focus_panel()
+      end)
+    end
   end)
 end
 
