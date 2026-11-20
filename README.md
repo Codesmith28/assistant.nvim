@@ -6,6 +6,7 @@ A fast, lightweight Neovim testcase companion for competitive programming, forke
 
 ## ✨ Key Improvements in this Fork
 
+- **Cooperative TCP Server Architecture**: Safely manages port `10043` across multiple Neovim instances using state lockfiles (`assistant_server.json`). No hostile port takeovers or socket killing between instances, with graceful descriptor leak prevention.
 - **Smart Toolchain Auto-Discovery**: Automatically discovers modern compilers (versioned `g++-14..g++`, `clang++`, `python3`, `rustc`), detects the highest supported C++ standard (`-std=c++26` down to `c++17`), and sets optimal CP flags with zero boilerplate.
 - **Native Buffer Writing**: Full `:w`, `:wq`, and `<C-s>` support in the testcase patcher using `acwrite`, with real-time preview canvas updates.
 - **Seamless Testcase Creation**: Pressing `c` or `o` sequentially prompts for testcase input followed immediately by expected output.
@@ -29,6 +30,27 @@ A fast, lightweight Neovim testcase companion for competitive programming, forke
 
 Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
+### Option A: Background Listener (Recommended)
+
+To allow Competitive Companion to parse problems from your browser directly into Neovim in the background at any time (without needing to open the assistant UI first), load the plugin on `VeryLazy`:
+
+```lua
+{
+  'Codesmith28/assistant.nvim',
+  event = 'VeryLazy',
+  keys = {
+    { '<leader>a', '<cmd>Assistant<cr>', desc = 'Assistant.nvim' },
+  },
+  opts = {
+    -- configuration goes here (see below)
+  },
+}
+```
+
+### Option B: On-Demand Lazy Loading
+
+If you prefer lazy-loading strictly on-demand when opening the assistant UI:
+
 ```lua
 {
   'Codesmith28/assistant.nvim',
@@ -45,17 +67,19 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ## ⚙️ Configuration & Toolchain Discovery
 
-`assistant.nvim` automatically discovers the modern compilers on your system (`g++`, `clang++`, `python3`, `rustc`), detects the highest supported standard (e.g. `-std=c++26`), enables recommended CP debug flags (`-Wall -Wextra -D_GLIBCXX_DEBUG`), and cleanly isolates binaries inside `.ast/bin/` without cluttering the repository.
+`assistant.nvim` automatically discovers modern compilers on your system (`g++`, `clang++`, `python3`, `rustc`), detects the highest supported standard (e.g. `-std=c++26`), enables recommended CP debug flags (`-Wall -Wextra -D_GLIBCXX_DEBUG`), and cleanly isolates binaries inside `.ast/bin/` without cluttering the repository.
 
 **Zero configuration is required!** You can pass `{}` or customize options as desired:
 
 ```lua
 require('assistant').setup({
   core = {
-    port = 10043,            -- Competitive Companion listener port
-    process_budget = 5000,   -- Execution timeout in milliseconds (TL)
-    default_source = 'cpp',  -- Auto-select without prompting
-    out_dir = '.ast/bin',    -- Auto-created directory for compiled binaries
+    port = 10043,                  -- Competitive Companion listener port
+    auto_start_server = true,      -- Auto-start TCP server during setup
+    claim_port_on_focus = false,   -- Attempt to claim port on FocusGained
+    process_budget = 5000,         -- Execution timeout in milliseconds (TL)
+    default_source = 'cpp',        -- Auto-select without prompting
+    out_dir = '.ast/bin',          -- Auto-created directory for compiled binaries
   },
   ui = {
     border = 'rounded',
@@ -87,6 +111,17 @@ require('assistant').setup({
 - `$FILENAME_WITHOUT_EXTENSION` – File name without extension (e.g., `solution`)
 - `$OUT_DIR` – Configured binary output directory (default: `.ast/bin`)
 - `$FILEDIR` – Directory containing the active source file
+
+---
+
+## ⌨️ Commands
+
+| Command | Description |
+| --- | --- |
+| `:Assistant` | Open the Assistant wizard / UI |
+| `:AssistantServerStart` | Start the TCP listener (cooperative, checks for active instances) |
+| `:AssistantServerStop` | Stop the TCP listener and release port / lockfile |
+| `:AssistantServerStatus` | Inspect TCP server state (running locally, running in another instance, or stopped) |
 
 ---
 

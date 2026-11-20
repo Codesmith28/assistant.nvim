@@ -28,7 +28,24 @@ register_buffer_safety()
 ---@param opts? Assistant.Config
 function M.setup(opts)
   require('assistant.config').overwrite(opts)
-  require('assistant.core.tcp').bind_server()
+  local config = require 'assistant.config'
+
+  if config.values.core.auto_start_server then
+    require('assistant.core.tcp').bind_server({ silent = true })
+  end
+
+  if config.values.core.claim_port_on_focus then
+    vim.api.nvim_create_autocmd('FocusGained', {
+      group = vim.api.nvim_create_augroup('assistant_focus', { clear = true }),
+      callback = function()
+        local tcp = require 'assistant.core.tcp'
+        if not tcp.is_server_running() then
+          tcp.bind_server({ silent = true })
+        end
+      end,
+    })
+  end
+
   register_buffer_safety()
 
   -- Ensure state is saved and TCP cleanly terminates on exit
@@ -48,6 +65,24 @@ function M.setup(opts)
     require('assistant.utils').ensure_out_dir()
     require('assistant.builtins.__wizard').standard:show()
   end, { nargs = 0, force = true })
+
+  vim.api.nvim_create_user_command('AssistantServerStart', function()
+    require('assistant.core.tcp').bind_server(function(success, msg)
+      if success then
+        require('assistant.utils').info(msg or 'Assistant server started')
+      else
+        require('assistant.utils').warn(msg or 'Failed to start assistant server')
+      end
+    end)
+  end, { desc = 'Start Assistant TCP server', force = true })
+
+  vim.api.nvim_create_user_command('AssistantServerStop', function()
+    require('assistant.core.tcp').stop_server(nil, false)
+  end, { desc = 'Stop Assistant TCP server', force = true })
+
+  vim.api.nvim_create_user_command('AssistantServerStatus', function()
+    require('assistant.core.tcp').print_status()
+  end, { desc = 'Show Assistant TCP server status', force = true })
 end
 
 ---@return table

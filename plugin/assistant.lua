@@ -27,6 +27,24 @@ vim.api.nvim_create_user_command('Assistant', function()
   require('assistant.builtins.__wizard').standard:show()
 end, { nargs = 0, force = true })
 
+vim.api.nvim_create_user_command('AssistantServerStart', function()
+  require('assistant.core.tcp').bind_server(function(success, msg)
+    if success then
+      require('assistant.utils').info(msg or 'Assistant server started')
+    else
+      require('assistant.utils').warn(msg or 'Failed to start assistant server')
+    end
+  end)
+end, { desc = 'Start Assistant TCP server', force = true })
+
+vim.api.nvim_create_user_command('AssistantServerStop', function()
+  require('assistant.core.tcp').stop_server(nil, false)
+end, { desc = 'Stop Assistant TCP server', force = true })
+
+vim.api.nvim_create_user_command('AssistantServerStatus', function()
+  require('assistant.core.tcp').print_status()
+end, { desc = 'Show Assistant TCP server status', force = true })
+
 vim.api.nvim_create_autocmd('VimResized', {
   callback = function()
     for _, window in pairs {

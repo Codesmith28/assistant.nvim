@@ -5,6 +5,8 @@
 ---@field out_dir? string
 ---@field auto_select_single_source? boolean
 ---@field filename_generator fun(str: string): string
+---@field auto_start_server? boolean
+---@field claim_port_on_focus? boolean
 
 ---@class Assistant.Config.UI
 ---@field border string
@@ -38,6 +40,8 @@ function config.get_defaults(out_dir)
       default_source = 'cpp',
       out_dir = out_dir,
       auto_select_single_source = true,
+      auto_start_server = true,
+      claim_port_on_focus = false,
     },
   }
 end
